@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SENTINEL // CORE_INTERFACE</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root { --neon-green: #00ff41; --dark-bg: #0a0a0a; --panel-bg: #141414; }
+        body { background: var(--dark-bg); color: var(--neon-green); font-family: 'Courier New', monospace; margin: 0; padding: 20px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; }
+        .card { background: var(--panel-bg); border: 1px solid var(--neon-green); padding: 15px; box-shadow: 0 0 10px rgba(0, 255, 65, 0.2); }
+        h1 { text-shadow: 0 0 5px var(--neon-green); border-bottom: 1px solid var(--neon-green); padding-bottom: 10px; }
+        .status-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .uptime-pill { background: rgba(0, 255, 65, 0.1); padding: 2-px 8px; border: 1px solid var(--neon-green); font-size: 0.8em; }
+        canvas { max-height: 150px; }
+    </style>
+</head>
+<body>
+    <h1>> SENTINEL_V2.0_STATUS_SYSTEM</h1>
+    <div id="grid" class="grid"></div>
+
+    <script>
+        const charts = {};
+
+        async function updateDashboard() {
+            const res = await fetch('/api/stats');
+            const data = await res.json();
+            const grid = document.getElementById('grid');
+
+            // Group data by URL
+            const grouped = data.reduce((acc, curr) => {
+                if (!acc[curr.url]) acc[curr.url] = [];
+                acc[curr.url].push(curr);
+                return acc;
+            }, {});
+
+            for (const [url, results] of Object.entries(grouped)) {
+                let card = document.getElementById(url);
+                if (!card) {
+                    card = document.createElement('div');
+                    card.id = url;
+                    card.className = 'card';
+                    grid.appendChild(card);
+                }
+
+                const latest = results[0];
+                const history = [...results].reverse(); // Oldest to newest for chart
+
+                card.innerHTML = `
+                    <div class="status-header">
+                        <div>
+                            <strong>TARGET: ${url}</strong><br>
+                            <small>LATENCY: ${latest.latency_ms}ms</small>
+                        </div>
+                        <div class="uptime-pill">${latest.status_code === 200 ? 'SYS_READY' : 'SYS_FAIL'}</div>
+                    </div>
+                    <canvas id="chart-${url}"></canvas>
+                `;
+
+                renderChart(url, history.map(h => h.latency_ms), history.map(h => h.checked_at));
+            }
+        }
+
+        function renderChart(url, data, labels) {
+            const ctx = document.getElementById(`chart-${url}`).getContext('2d');
+            if (charts[url]) charts[url].destroy();
+            charts[url] = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'LATENCY (MS)',
+                        data: data,
+                        borderColor: '#00ff41',
+                        borderWidth: 1,
+                        pointRadius: 0,
+                        backgroundColor: 'rgba(0, 255, 65, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: { 
+                    plugins: { legend: { display: false } },
+                    scales: { 
+                        x: { display: false },
+                        y: { grid: { color: '#222' }, ticks: { color: '#00ff41', size: 10 } }
+                    }
+                }
+            });
+        }
+
+        setInterval(updateDashboard, 2000);
+        updateDashboard();
+    </script>
+</body>
+</html>

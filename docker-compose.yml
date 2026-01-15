@@ -1,0 +1,46 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: sentinel-db
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: sentinel
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d sentinel"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: api.Dockerfile
+    container_name: sentinel-api
+    ports:
+      - "3000:3000"
+    environment:
+      - DB_URL=postgresql://admin:password@db:5432/sentinel?sslmode=disable
+    depends_on:
+      db:
+        condition: service_healthy
+
+  worker:
+    build: 
+      context: .
+      dockerfile: worker.Dockerfile
+    container_name: sentinel-worker
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - DB_URL=postgresql://admin:password@db:5432/sentinel?sslmode=disable
+
+  adminer:
+    image: adminer
+    container_name: sentinel-adminer
+    restart: always
+    ports:
+      - "8080:8080"
