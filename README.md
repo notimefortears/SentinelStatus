@@ -3,7 +3,7 @@
 ![Go](https://img.shields.io/badge/Go-00ADD8?style=for-the-badge&logo=go&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
-![Status](http://localhost:3000/api/badge?url=https://google.com)
+
 
 A high-performance, distributed site reliability monitor. Sentinel provides real-time latency tracking, consecutive failure alerting, and a time-series telemetry dashboard—all wrapped in a professional, dark-mode terminal interface.
 
